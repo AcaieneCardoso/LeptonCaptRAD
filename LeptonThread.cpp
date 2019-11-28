@@ -6,8 +6,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
+#include <wiringPi.h>
+
 #define WIDTH 160
 #define HEIGHT 120
+
+//debounce variables
+uint8_t flag = 0;
+uint16_t count = 0;
 
 static const char *device = "/dev/spidev0.0";
 uint8_t mode;
@@ -159,6 +166,30 @@ void LeptonThread::run()
 			}		
 			usleep(1000/106);
 		}
+		
+		//*****************************************************************
+		//GPIO BUTTON IMPLEMENTED with debounce treatment
+		//pin 10 uartRX  GPIO 15 , 3V3: pin ? , GND: pin 9
+		using namespace std;
+
+		wiringPiSetup();        // Setup the library
+		pinMode(15, INPUT);     // Configure GPIO15 as an input
+		
+		if((digitalRead(15) == 1))
+		{
+			if (count <= 50){
+				count++;
+			}
+		}else{
+			count = 0;
+			flag = 0;
+		}
+		
+		if((count >= 10) && (flag == 0)){
+			snapshot();
+			flag = 1;
+		}
+		//*****************************************************************
 
 		frameBuffer = (uint16_t *)result;
 		int row, column;
@@ -311,6 +342,10 @@ void LeptonThread::snapshot(){
 	for(int i = 0; i < 120; i++){
 			for(int j = 0; j < 160; j++){
 				//*********************************************************
+				LEP_STATUS_T_PTR ss;
+				while(ss){
+					LEP_GetSysStatus(&_port, ss);
+				}
 				//utilizar ROI_temp(j, i) para dividir por 100 e subtrair 273.15 e ter a temperatura em Celsius
 				txt_temp = ROI_temp(j, i);
 				txt_temp = (txt_temp/100) - 273.15;
