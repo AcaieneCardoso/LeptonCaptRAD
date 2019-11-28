@@ -11,7 +11,11 @@ bool _connected;
 LEP_CAMERA_PORT_DESC_T _port;
 LEP_SYS_FPA_TEMPERATURE_KELVIN_T fpa_temp_kelvin;
 LEP_RESULT result;
+//****************************************************
+//variables used on ROI_temp()
 LEP_RAD_ROI_T spotmeterRoi;
+LEP_RAD_SPOTMETER_OBJ_KELVIN_T spotmeterObj;
+//****************************************************
 
 int lepton_connect() {
 	int res = (int)LEP_OpenPort(1, LEP_CCI_TWI, 400, &_port);
@@ -37,13 +41,16 @@ float raw2Celsius(float raw){
 
 //****************************************************************************
 float ROI_temp(int colum, int row){
+	//defining structure to set ROI
 	spotmeterRoi.startRow = row;
 	spotmeterRoi.startCol = colum;
 	spotmeterRoi.endRow = row;
 	spotmeterRoi.endCol = colum;
-	//return LEP_SetRadSpotmeterRoi(&_port, spotmeterRoi);
-	//ou
-	//return LEP_GetRadSpotmeterRoi(&_port, spotmeterRoi);
+	//Setting ROI
+	LEP_SetRadSpotmeterRoi(&_port, spotmeterRoi);
+	//Getting pixel RAD temp.
+    LEP_GetRadSpotmeterObjInKelvinX100(&_port, &spotmeterObj);
+	return spotmeterObj.radSpotmeterValue;
 }
 //****************************************************************************
 

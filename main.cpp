@@ -13,9 +13,6 @@
 #include "LeptonThread.h"
 #include "MyLabel.h"
 
-#include <iostream>
-#include <wiringPi.h>
-
 
 
 
@@ -138,21 +135,7 @@ int main( int argc, char **argv )
 	QObject::connect(button1, SIGNAL(clicked()), thread, SLOT(performFFC()));
 	//connect snapshot button to the thread's snapshot action
 	QObject::connect(button2, SIGNAL(clicked()), thread, SLOT(snapshot()));
-
-	//******************************************************************************************************
-	//GPIO BUTTON IMPLEMENTED
-	//Button
-    //pin 10 uartRX  GPIO 15 // 3V3: pin  // GND: pin 9
-    using namespace std;
-
-    wiringPiSetup();        // Setup the library
-    pinMode(15, INPUT);     // Configure GPIO15 as an input
-
-    if(digitalRead(15) == 1)
-    {
-    	snapshot();
-    }
-    //******************************************************************************************************
+	
 
 	//connect restart button to the thread's restart action
 	QObject::connect(button3, SIGNAL(clicked()), thread, SLOT(restart()));
@@ -177,22 +160,16 @@ int main( int argc, char **argv )
 	QObject::connect(button8, SIGNAL(clicked()), thread, SLOT(FFC_Manual()));
 
 
-
 	//connect RAD Info button to the thread's RAD info action
 	QObject::connect(button9, SIGNAL(clicked()), thread, SLOT(RAD_Info()));
-
-
 
 
 	//connect FFC auto button to the thread's FFC AUTO action
 	QObject::connect(button10, SIGNAL(clicked()), thread, SLOT(FFC_Auto()));
 
 
-
-
 	//connect disable TLinear RAD button to the thread's disable tlinear rad
 	QObject::connect(button11, SIGNAL(clicked()), thread, SLOT(disable_TLinear_RAD()));
-
 
 
 	//connect FPA ROI button to the thread's FPA ROI action
