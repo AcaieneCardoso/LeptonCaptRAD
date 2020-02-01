@@ -11,6 +11,7 @@
 #include "sdk/leptonSDKEmb32PUB/LEPTON_RAD.h"
 bool _connected;
 
+//Lepton variables
 LEP_CAMERA_PORT_DESC_T _port;
 LEP_SYS_FPA_TEMPERATURE_KELVIN_T fpa_temp_kelvin;
 LEP_RESULT result;
@@ -24,10 +25,10 @@ int lepton_connect() {
 	return res;
 }
 
-
 int lepton_temperature(){
-	if(!_connected)
+	if(!_connected){
 		lepton_connect();
+	}
 	result = ((LEP_GetSysFpaTemperatureKelvin(&_port, &fpa_temp_kelvin)));
 	printf("FPA temp kelvin: %i, code %i\n", fpa_temp_kelvin, result);
 	return (fpa_temp_kelvin/100);
@@ -36,11 +37,9 @@ int lepton_temperature(){
 float raw2Celsius(float raw){
 	//float ambientTemperature = 25.0;
 	//float slope = 0.0217;
-	return (raw/100)-273.15;
-
+	return ((raw/100)-273.15);
 	//return raw;
 }
-
 
 float lepton_temperature1(float raw){
 	result = ((LEP_GetSysFpaTemperatureKelvin(&_port, &fpa_temp_kelvin)));
@@ -80,7 +79,6 @@ float ROI_temp(int colum, int row){
 }
 //****************************************************************************
 
-
 void lepton_perform_ffc() {
 	printf("performing FFC...\n");
 	if(!_connected) {
@@ -91,7 +89,6 @@ void lepton_perform_ffc() {
 			printf("error code: %d\n", res);
 		}
 	}
-
 	int res = (int)LEP_RunSysFFCNormalization(&_port);
 	if (res != 0) {
 		printf("FFC not successful\n");
@@ -122,8 +119,6 @@ void lepton_restart() {
 
 }
 
-
-
 void lepton_disable_agc() {
 	if(!_connected) {
 		int res = lepton_connect();
@@ -135,7 +130,6 @@ void lepton_disable_agc() {
 	}
 	printf("Disable AGC...\n");
 	
-	
 	int res = (int)LEP_SetAgcEnableState(&_port, LEP_AGC_DISABLE);
 	if(res != 0) {
 		printf("Disable AGC unsuccessful with error: %d\n", res);
@@ -144,6 +138,7 @@ void lepton_disable_agc() {
 	}
 		
 }
+
 void lepton_enable_agc() {
 	if(!_connected) {
 		int res = lepton_connect();
@@ -155,7 +150,6 @@ void lepton_enable_agc() {
 	}
 	printf("Enable AGC...\n");
 	
-	
 	int res = (int)LEP_SetAgcEnableState(&_port, LEP_AGC_ENABLE);
 
 	if(res != 0) {
@@ -165,9 +159,6 @@ void lepton_enable_agc() {
 	}
 }
 	
-	
-
-
 void lepton_serial_number() {
 	//verify connection
 	if(!_connected) {
@@ -185,19 +176,12 @@ void lepton_serial_number() {
 	printf("RadTlinear: %d\n", rad_state);
 	printf("RadEnableState: %d\n", rad_state);
 
-
-
 	LEP_SYS_TELEMETRY_ENABLE_STATE_E tele_state;
 	LEP_GetSysTelemetryEnableState(&_port, &tele_state);
 	printf("TelemetryEnableState: %i\n", tele_state);
-	
-
 	//LEP_SetSysTelemetryEnableState(&_port, LEP_TELEMETRY_ENABLED);
-	//printf("telemetry enable");
-		
+	//printf("telemetry enable");	
 }
-
-
 
 void lepton_sysfpatempk() {
 	//verify connection
@@ -209,41 +193,25 @@ void lepton_sysfpatempk() {
 			printf("error code: %d\n", res);
 		}
 	}
-
 //unsigned int LeptonVariation::getRadSpotmeterObjInKelvinX100()
-
     LEP_RAD_SPOTMETER_OBJ_KELVIN_T spotmeterObj;
     LEP_GetRadSpotmeterObjInKelvinX100(&_port, &spotmeterObj);
     printf("TEMP (GetRadSpotmeterObjInKelvinX100) : %d \n", spotmeterObj.radSpotmeterValue);
-
 	//result = ((LEP_GetSysFpaTemperatureKelvin(&_port, &fpa_temp_kelvin)));
-	
 	LEP_GetSysFpaTemperatureKelvin(&_port, &fpa_temp_kelvin);
 	printf("FPA temp kelvin (GetSysFpaTemperatureKelvin) : %i \n", fpa_temp_kelvin); 
 	//printf("FPA temp kelvin (GetSysFpaTemperatureKelvin) result já dividido por 100: %i, \n", fpa_temp_kelvin/100, result); 
-
-
 	LEP_SYS_AUX_TEMPERATURE_KELVIN_T sysauxtemp;
 	LEP_GetSysAuxTemperatureKelvin(&_port, &sysauxtemp);
 	printf("SysAuxTemp (GetSysAuxTemperatureKelvin): %d \n", sysauxtemp);
-
-
 	LEP_SYS_AUX_TEMPERATURE_CELCIUS_T sysauxTCelsius;
 	LEP_GetSysAuxTemperatureCelcius(&_port, &sysauxTCelsius);
 	printf("Temp C AUX(GetSysAuxTemperatureCelcius): %d \n", sysauxTCelsius);
-
-
-
 	LEP_SYS_FPA_TEMPERATURE_CELCIUS_T sysfpaTCelsius;
 	LEP_GetSysFpaTemperatureCelcius(&_port, &sysfpaTCelsius);
 	printf("Temp C FPA(GetSysFpaTemperatureCelcius): %d \n", sysfpaTCelsius);
-
 	//printf("Sys fpa\n");
 }
-
-
-
-
 
 void lepton_ffc_manual() {
 	//verify connection
@@ -256,14 +224,9 @@ void lepton_ffc_manual() {
 		}
 	}
 	LEP_SetSysTelemetryEnableState(&_port, LEP_TELEMETRY_ENABLED);
-	printf("telemetry enable\n");
-		
+	printf("telemetry enable\n");	
 	//printf("fcc manual\n");
 }
-
-
-
-
 
 void lepton_rad_info() {
 	//verify connection
@@ -275,9 +238,7 @@ void lepton_rad_info() {
 			printf("error code: %d\n", res);
 		}
 	}
-
  	system("/home/pi/LeptonGitOff/leptonSDKRAD/Lepton3/capture/32spd");
-
 	if(!_connected) {
 		int res = lepton_connect();
 		if (res != 0) {
@@ -294,8 +255,6 @@ void lepton_rad_info() {
 //	printf("rad info\n");
 }
 
-
-
 void lepton_ffc_auto() {
 	//verify connection
 	if(!_connected) {
@@ -307,12 +266,9 @@ void lepton_ffc_auto() {
 		}
 	}
 	LEP_AGC_ENABLE_E isAGCEnabled;
-//
 	LEP_GetAgcEnableState(&_port, &isAGCEnabled);
 	printf("LEP_GetAgcEnableState: %d, \n", isAGCEnabled);
 	
-
-
 	if (isAGCEnabled != 0){
 		printf("AGC : %d\n", isAGCEnabled);
 		printf("AGC Enable\n");
@@ -321,18 +277,11 @@ void lepton_ffc_auto() {
 		printf("AGC : %d\n", isAGCEnabled);
 		printf("AGC Disable \n");
 	}
-
-
 	//LEP_RAD_ENABLE_E tlinear = LEP_RAD_DISABLE;
 	//LEP_GetRadTLinearEnableState(&_port, LEP_RAD_DISABLED);
     	//printf(" %d\n", tlinear);
-
 	printf("FFC AUTO\n");
 }
-
-
-
-
 
 void lepton_disable_tlinear_rad() {
 	//verify connection

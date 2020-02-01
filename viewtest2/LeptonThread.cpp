@@ -6,17 +6,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #include <iostream>
 #include <wiringPi.h>
 
-
-
 #define WIDTH 160
 #define HEIGHT 120
-
-
-
 
 //debounce variables
 uint8_t flag = 0;
@@ -29,14 +23,14 @@ static uint32_t speed = 32000000;
 int selectedColorMap = 0;
 float  txt_temp;
 
-
-wiringPiSetup();        // Setup the library
-pinMode(2, INPUT);     // Configure GPIO15 as an input
-
+//button setup
+wiringPiSetup();	// Setup the library
+pinMode(2, INPUT);	// Configure GPIO15 as an input
 
 int snapshotCount = 0;
 int frame = 0;
 static int raw [120][160];
+
 static void pabort(const char *s)
 {
 	perror(s);
@@ -75,9 +69,7 @@ const int* getColorMap()
 
 LeptonThread::LeptonThread() : QThread()
 {
-
-SpiOpenPort(0);
-
+	SpiOpenPort(0);
 }
 
 LeptonThread::~LeptonThread() {
@@ -88,9 +80,6 @@ LeptonThread::~LeptonThread() {
 
 void LeptonThread::run()
 {
-	//lepton_button ()
-
-
 	//create the initial image
 	QRgb red = qRgb(255,0,0);
 	myImage = QImage(160, 120, QImage::Format_RGB888);
@@ -99,66 +88,19 @@ void LeptonThread::run()
 			myImage.setPixel(i, j, red);
 		}
 	}
-	int ret = 0;
-	int fd;
 
-
-	fd = open(device, O_RDWR);
-	if (fd < 0)
-	{
-		pabort("can't open device");
-	}
-
-	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
-	if (ret == -1)
-	{
-		pabort("can't set spi mode");
-	}
-
-	ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
-	if (ret == -1)
-	{
-		pabort("can't get spi mode");
-	}
-
-	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
-	if (ret == -1)
-	{
-		pabort("can't set bits per word");
-	}
-
-	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
-	if (ret == -1)
-	{
-		pabort("can't get bits per word");
-	}
-
-	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
-	if (ret == -1)
-	{
-		pabort("can't set max speed hz");
-	}
-
-	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
-	if (ret == -1)
-	{
-		pabort("can't get max speed hz");
-	}
-
+	OpenSPI();	
 
 	//update image based on red image created above
 	emit updateImage(myImage);
 
-
 	//begin on infinite loop to display SPI data on the screen
 	while(true) {
-
 		int resets = 0;
 		int segmentNumber = 0;
 
 		for(int i = 0; i < NUMBER_OF_SEGMENTS; i++){
 			for(int j=0;j<PACKETS_PER_SEGMENT;j++) {
-				
 				//read data packets from lepton over SPI
 				read(spi_cs0_fd, result+sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j), sizeof(uint8_t)*PACKET_SIZE);
 				int packetNumber = result[((i*PACKETS_PER_SEGMENT+j)*PACKET_SIZE)+1];
@@ -175,7 +117,7 @@ void LeptonThread::run()
 						qDebug() << "restarting spi...";
 						usleep(5000);
 						//function to open SPI port - not validated
-						SpiOpenPort(0);
+						OpenSPI();
 						j = -1;
 					}
 					continue;
@@ -183,19 +125,18 @@ void LeptonThread::run()
 				if(packetNumber == 20) {
 					//reads the "ttt" number
 					segmentNumber = result[(i*PACKETS_PER_SEGMENT+j)*PACKET_SIZE] >> 4;
-						//if it's not the segment expected reads again
-						//for some reason segment are shifted, 1 down in result
-						//(i+1)%4 corrects this shifting
-						if(segmentNumber != (i+1)%4){
-							j = -1;
-							//resets += 1;
-							//usleep(1000);
-						}
+					//if it's not the segment expected reads again
+					//for some reason segment are shifted, 1 down in result
+					//(i+1)%4 corrects this shifting
+					if(segmentNumber != (i+1)%4){
+						j = -1;
+						//resets += 1;
+						//usleep(1000);
+					}
 				}
 			}		
 			usleep(1000/106);
 		}
-
 
 		frameBuffer = (uint16_t *)result;
 		int row, column;
@@ -203,7 +144,6 @@ void LeptonThread::run()
 		uint16_t minValue = 65535;
 		uint16_t maxValue = 0;
 
-		
 		for(int i=0;i<FRAME_SIZE_UINT16;i++) {
 			//skip the first 2 uint16_t's of every packet, they're 4 header bytes
 			if(i % PACKET_SIZE_UINT16 < 2) {
@@ -225,7 +165,6 @@ void LeptonThread::run()
 			}		
 		}
 	
-
 		float diff = maxValue - minValue;
 		float scale = 255/diff;
 		QRgb color;
@@ -272,30 +211,28 @@ void LeptonThread::run()
 		s.sprintf("%.2f C", tempC);
 		emit updateRadiometry(s);
 
-
 		//Draw crosshairs in the middle of the image
 		for(int j = 0; j < 5; j++){
 			myImage.setPixel(WIDTH/2-1, HEIGHT/2-3+j, 0);
 			myImage.setPixel(WIDTH/2-3+j, HEIGHT/2-1, 0);
 		}
 
-
 		//lets emit the signal for update
 		emit updateImage(myImage);
 		frame++;
  
-
 	//button loop with debounce treatment
     if((digitalRead(2) == 1))
-       	{
+    {
 		if (count <= 50){
 			count++;
 		}
-	}else{
+	}
+	else{
 		count = 0;
 		flag = 0;
 	}
-		
+
 	if((count >= 5) && (flag == 0)){
 		snapshot();
 		lepton_rad_info();
@@ -303,13 +240,13 @@ void LeptonThread::run()
 		flag = 1;
 	}
 	
-
 	//finally, close SPI port just bcuz
 	SpiClosePort(0);
 }
 
 
-void LeptonThread::snapshot(){
+void LeptonThread::snapshot()
+{
 	snapshotCount++;
 	//---------------------- create image file -----------------------
 	struct stat buf;
@@ -372,7 +309,6 @@ void LeptonThread::snapshot(){
 	fclose(arq);
 }
 
-
 void LeptonThread::performFFC() {
 	//perform FFC
 	lepton_perform_ffc();
@@ -398,11 +334,9 @@ void LeptonThread::SysFpaTempK() {
 	lepton_sysfpatempk();
 }
 
-
 void LeptonThread::FFC_Manual() {
 	lepton_ffc_manual();
 }
-
 
 void LeptonThread::RAD_Info() {
 	lepton_rad_info();
@@ -420,8 +354,6 @@ void LeptonThread::FPA_ROI() {
 	lepton_fpa_roi();
 }
 
-
 void LeptonThread::setColorMap(int index) {
 	selectedColorMap = index;
 }
-

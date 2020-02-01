@@ -33,5 +33,8 @@ extern unsigned int spi_speed;
 
 int SpiOpenPort(int spi_device);
 int SpiClosePort(int spi_device);
+void OpenSPI();
+int spi_open(int *h, std::string spidev, uint8_t mode, uint8_t bits, uint32_t speed);
+int spi_close(int *h);
 
 #endif
