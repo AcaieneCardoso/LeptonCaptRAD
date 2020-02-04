@@ -16,26 +16,26 @@
 uint8_t flag = 0;
 uint16_t count = 0;
 
-static const char *device = "/dev/spidev0.0";
-uint8_t mode;
-static uint8_t bits = 8;
-static uint32_t speed = 32000000;
+//static const char *device = "/dev/spidev0.0";
+//uint8_t mode;
+//static uint8_t bits = 8;
+//static uint32_t speed = 32000000;
 int selectedColorMap = 0;
 float  txt_temp;
 
 //button setup
-wiringPiSetup();	// Setup the library
-pinMode(2, INPUT);	// Configure GPIO15 as an input
+//wiringPiSetup();	// Setup the library
+//pinMode(2, INPUT);	// Configure GPIO15 as an input
 
 int snapshotCount = 0;
 int frame = 0;
 static int raw [120][160];
 
-static void pabort(const char *s)
-{
-	perror(s);
-	abort();
-}
+//static void pabort(const char *s)
+//{
+//	perror(s);
+//	abort();
+//}
 
 const int* getColorMap() 
 {
@@ -220,6 +220,9 @@ void LeptonThread::run()
 		//lets emit the signal for update
 		emit updateImage(myImage);
 		frame++;
+
+	wiringPiSetup();	// Setup the library
+	pinMode(2, INPUT);	// Configure GPIO15 as an input
  
 	//button loop with debounce treatment
     if((digitalRead(2) == 1))

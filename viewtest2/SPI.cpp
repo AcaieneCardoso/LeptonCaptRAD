@@ -7,6 +7,17 @@ unsigned char spi_mode = SPI_MODE_3;
 unsigned char spi_bitsPerWord = 8;
 unsigned int spi_speed = 200000000;
 
+static const char *device = "/dev/spidev0.0";
+uint8_t mode;
+static uint8_t bits = 8;
+static uint32_t speed = 32000000;
+
+static void pabort(const char *s)
+{
+	perror(s);
+	abort();
+}
+
 /*
 	Name: spi_open
 	Description: Open SPI device and configure mode
