@@ -244,7 +244,9 @@ void LeptonThread::run()
 	}
 	
 	//finally, close SPI port just bcuz
+	//pegar o retorno dessa função e printar na tela para ver qual o retorno de close
 	SpiClosePort(0);
+
 }
 
 

@@ -7,10 +7,11 @@ unsigned char spi_mode = SPI_MODE_3;
 unsigned char spi_bitsPerWord = 8;
 unsigned int spi_speed = 200000000;
 
+//pequenas adequações a inicialização do SPI
 static const char *device = "/dev/spidev0.0";
-uint8_t mode;
+unsigned char mode = SPI_MODE_3;
 static uint8_t bits = 8;
-static uint32_t speed = 32000000;
+static uint32_t speed = 20000000;
 
 static void pabort(const char *s)
 {
@@ -138,6 +139,7 @@ int spi_close(int *h) {
 	return r;
 }
 
+
 void OpenSPI(){
 	int ret = 0;
 	int fd;
@@ -148,11 +150,14 @@ void OpenSPI(){
 		pabort("can't open device");
 	}
 
+	//não queremos escrever no SPI
+	/*
 	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
 	if (ret == -1)
 	{
 		pabort("can't set spi mode");
 	}
+	*/
 
 	ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
 	if (ret == -1)
