@@ -16,6 +16,9 @@
 uint8_t flag = 0;
 uint16_t count = 0;
 
+//switch / case variables
+bool CRC_flag = true;
+
 //static const char *device = "/dev/spidev0.0";
 //uint8_t mode;
 //static uint8_t bits = 8;
@@ -69,18 +72,19 @@ const int* getColorMap()
 
 LeptonThread::LeptonThread() : QThread()
 {
-	SpiOpenPort(0);
+	//SpiOpenPort(0);
 }
 
-LeptonThread::~LeptonThread() {
+LeptonThread::~LeptonThread() 
+{
 
 }
 
-//LeptonThread::lepton_button(){}
+//LeptonThread::lepton_button() {}
 
 void LeptonThread::run()
 {
-	//create the initial image
+	// Create the initial image
 	QRgb red = qRgb(255,0,0);
 	myImage = QImage(160, 120, QImage::Format_RGB888);
 	for(int i=0;i<160;i++) {
@@ -89,53 +93,49 @@ void LeptonThread::run()
 		}
 	}
 
-	OpenSPI();	
-
-	//update image based on red image created above
+	// Update image based on red image created above
 	emit updateImage(myImage);
 
-	//begin on infinite loop to display SPI data on the screen
-	while(true) {
+	// Begin the infinite loop to display SPI data on the screen
+	while (true) {
 		int resets = 0;
 		int segmentNumber = 0;
 
-		for(int i = 0; i < NUMBER_OF_SEGMENTS; i++){
-			for(int j=0;j<PACKETS_PER_SEGMENT;j++) {
-				//read data packets from lepton over SPI
-				read(spi_cs0_fd, result+sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j), sizeof(uint8_t)*PACKET_SIZE);
-				int packetNumber = result[((i*PACKETS_PER_SEGMENT+j)*PACKET_SIZE)+1];
-				//printf("packetNumber: 0x%x\n", packetNumber);
-				//if it's a drop packet, reset j to 0, set to -1 so he'll be at 0 again loop
-				if(packetNumber != j) {
-					//j = -1;
-					resets += 1;
-					usleep(1000);
-					//continue;
-					if(resets == 100) {
-						//function to close SPI port - not validated
-						SpiClosePort(0);
-						qDebug() << "restarting spi...";
-						usleep(5000);
-						//function to open SPI port - not validated
-						OpenSPI();
-						j = -1;
-					}
-					continue;
-				} else			
-				if(packetNumber == 20) {
-					//reads the "ttt" number
-					segmentNumber = result[(i*PACKETS_PER_SEGMENT+j)*PACKET_SIZE] >> 4;
-					//if it's not the segment expected reads again
-					//for some reason segment are shifted, 1 down in result
-					//(i+1)%4 corrects this shifting
-					if(segmentNumber != (i+1)%4){
-						j = -1;
-						//resets += 1;
-						//usleep(1000);
-					}
+		switch (CRC_flag)
+​		{
+    		case true:
+    			OpenSPI();
+    			CRC_flag = false;
+        		break;
+
+    		case false:
+    			// Continue reading discart packets (ID: xFxx) until new segment is available. Should be less than 10ms
+				do {
+					read(spi_cs0_fd, result+sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j), sizeof(uint8_t)*PACKET_SIZE);
+				} while(result[1] == F);
+				
+				for(int i = 0; i < NUMBER_OF_SEGMENTS; i++){
+					for(int j=0;j<PACKETS_PER_SEGMENT;j++) {
+						// read data packets from lepton over SPI
+						read(spi_cs0_fd, result+sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j), sizeof(uint8_t)*PACKET_SIZE);
+					}		
+				usleep(1000/106); //??????????
 				}
-			}		
-			usleep(1000/106);
+
+    			// CRC check
+				if( result[(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)+2):(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)+3)] == fnCrc16BitsPoly1021(0, (result+sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)+4), (PACKET_SIZE-4)) )
+				{
+					continue;
+				}
+				else
+				{
+					qDebug() << "Error on CRC check !";
+					CRC_flag = true;
+				}
+        		break;
+
+            default:
+        		CRC_flag = true;
 		}
 
 		frameBuffer = (uint16_t *)result;
@@ -145,12 +145,12 @@ void LeptonThread::run()
 		uint16_t maxValue = 0;
 
 		for(int i=0;i<FRAME_SIZE_UINT16;i++) {
-			//skip the first 2 uint16_t's of every packet, they're 4 header bytes
+			// Skip the first 2 uint16_t's of every packet, they're 4 header bytes
 			if(i % PACKET_SIZE_UINT16 < 2) {
 				continue;
 			}
 			
-			//flip the MSB and LSB at the last second
+			// Flip the MSB and LSB at the last second
 			int temp = result[i*2];
 			result[i*2] = result[i*2+1];
 			result[i*2+1] = temp;
@@ -176,7 +176,7 @@ void LeptonThread::run()
 		
 			value = (frameBuffer[k] - minValue) * scale;
 			
-			//const int *colormap = colormap_medical;
+			// Const int *colormap = colormap_medical;
 			const int *colormap = getColorMap();
 			color = qRgb(colormap[3*value], colormap[3*value+1], colormap[3*value+2]);
 			
@@ -193,7 +193,7 @@ void LeptonThread::run()
 				myImage.setPixel(column, row, color);		
 		}
 		
-		//Find radiometric data from spot meter in 3x3 pixel box around the center of the image
+		// Find radiometric data from spot meter in 3x3 pixel box around the center of the image
 		float radValue = 0;
 		for(int i=0;i<3;i++){
 			for(int j=0;j<3;j++){
@@ -201,25 +201,26 @@ void LeptonThread::run()
 			}
 		}
 		radValue = radValue / 9;
-		//Radiometry values are the temperature in Kelvin * 100.
+		// Radiometry values are the temperature in Kelvin * 100.
 		float tempK = radValue/100;
 		float tempC = tempK - 273.15;
-		//float tempF = tempC * 1.8 + 32;
+		// float tempF = tempC * 1.8 + 32;
 		
-		//Update the UI with the new temperature info
+		// Update the UI with the new temperature info
 		QString s;
 		s.sprintf("%.2f C", tempC);
 		emit updateRadiometry(s);
 
-		//Draw crosshairs in the middle of the image
+		// Draw crosshairs in the middle of the image
 		for(int j = 0; j < 5; j++){
 			myImage.setPixel(WIDTH/2-1, HEIGHT/2-3+j, 0);
 			myImage.setPixel(WIDTH/2-3+j, HEIGHT/2-1, 0);
 		}
 
-		//lets emit the signal for update
+		// Lets emit the signal for update
 		emit updateImage(myImage);
 		frame++;
+	}
 
 	wiringPiSetup();	// Setup the library
 	pinMode(2, INPUT);	// Configure GPIO15 as an input
@@ -242,11 +243,6 @@ void LeptonThread::run()
 		//system("/home/pi/LeptonGitOff/leptonSDKRAD/Lepton3/capture/16spd");
 		flag = 1;
 	}
-	
-	//finally, close SPI port just bcuz
-	//pegar o retorno dessa função e printar na tela para ver qual o retorno de close
-	SpiClosePort(0);
-
 }
 
 
@@ -258,10 +254,12 @@ void LeptonThread::snapshot()
 	const char *prefix = "rgb";
 	const char *ext = ".png";
 	char number[32];
-	//convert from int to string
+
+	// Convert from int to string
 	sprintf(number, "%d", snapshotCount);
 	char name[64];
-	//appending photo name
+
+	// Appending photo name
 	strcpy(name, prefix);
 	strcat(name, number);
 	strcat(name, ext);
@@ -281,37 +279,33 @@ void LeptonThread::snapshot()
 	myImage.save(QString(name), "PNG", 100);
 	
 	//---------------------- create raw data text file -----------------------
-	//creating file name
+	// Creating file name
 	ext = ".txt";
 	strcpy(name, prefix);
 	strcat(name, number);
 	strcat(name, ext);
 	
+	// Opening file
 	FILE *arq = fopen(name,"wt");
 	char values[64];
 
-	//for(int i = 1; i < 120; i++){
-	//		for(int j = 1; j < 160  ; j++){
-
 	for(int i = 0; i < 120; i++){
-			for(int j = 0; j < 160  ; j++){
+		// Except on line 0, insert a new line
+		if ( i != 0 )
+		{
+			fputs("/n", arq);
+		}
+		for(int j = 0; j < 328; j++) {
+			// Writing 160 pixel value + 2 ID (2 bytes) + 2 CRC (2 bytes)
+			fputs(result[ j + ( i * ( PACKET_SIZE * 2 ) ) ], arq);
+			// Following a ; sign
+			fputs(" ; ", arq);
 
-
-				//*********************************************************
-				//utilizar ROI_temp(j, i) para dividir por 100 e subtrair 273.15 e ter a temperatura em Celsius
-				//txt_temp = ROI_temp(j, i);
-				//txt_temp = (txt_temp/100) - 273.15;
-				
-
-				sprintf(values, "%f", raw2Celsius(raw[i][j]));
-			//sprintf(values, "%f", txt_temp);
-				//*********************************************************
-				fputs(values, arq);
-				fputs(" ", arq);
-			}
-			fputs("\n", arq);
+		}
+		fputs("\n", arq);
 	}
 	fclose(arq);
+	//---------------------- create raw data text file -----------------------
 }
 
 void LeptonThread::performFFC() {
