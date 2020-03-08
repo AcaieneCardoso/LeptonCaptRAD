@@ -60,8 +60,11 @@ private:
 
   QImage myImage;
 
-  uint8_t result[PACKET_SIZE*PACKETS_PER_FRAME];
   uint16_t *frameBuffer;
+
+public:
+  
+  uint8_t result[PACKET_SIZE*PACKETS_PER_FRAME];
 
 };
 

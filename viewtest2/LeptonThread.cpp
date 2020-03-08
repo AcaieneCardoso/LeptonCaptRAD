@@ -106,7 +106,7 @@ void LeptonThread::run()
     		case true:
     			OpenSPI();
     			CRC_flag = false;
-        		break;
+    			break;
 
     		case false:
     			// Continue reading discart packets (ID: xFxx) until new segment is available. Should be less than 10ms
