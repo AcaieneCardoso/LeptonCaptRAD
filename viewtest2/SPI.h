@@ -31,7 +31,6 @@ extern unsigned char spi_mode;
 extern unsigned char spi_bitsPerWord;
 extern unsigned int spi_speed;
 
-uint16_t fnCrc16BitsPoly1021(uint16_t uiCrcInit, uint8_t* pucBuffer, uint32_t ulLen);
 int SpiOpenPort(int spi_device);
 int SpiClosePort(int spi_device);
 void OpenSPI();

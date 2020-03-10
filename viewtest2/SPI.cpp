@@ -153,68 +153,26 @@ void OpenSPI(){
     // Assert /CS and enable SCK
 	do {
 		fd = open(device, O_RDWR);
-		qDebug() << "Abrir porta SPI";
+		// Open SPI port
 	} while(fd < 0); 
 
 
 	do {
 		ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
-		qDebug() << "Setar modo SPI leitura";
+		// Set SPI read mode
 	} while(ret == -1); 
 
 
 	do {
 		ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
-		qDebug() << "Setar bits per word SPI";
+		// Set SPI bits per word
 	} while(ret == -1); 
 
 	
 	do {
 		ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
-		qDebug() << "Setar velocidade de clock do SPI";
+		// Set SPI clock speed 
 	} while(ret == -1); 
-}
-
-
-/*-----------------------------------------------------------------------------------------------*/
-/**
- *    @brief Calculate the 16 bits CRC with SEED = 0x1021.
- *
- *    @param[in] uint16_t uiCrcInit - CRC initial value.
- *    @param[in] uint8_t* pucData - Pointer to the first byte to calculate CRC. 
- *    @param[in] uint32_t ulLen -   Number of bytes used to calculate CRC
- *                                     - To calculate: Only number of bytes of the data, NOT including
- *                                                     the 2 bytes of CRC.
- *                                     - To check: Bytes of the data + 2 bytes of CRC. CRC must be stored
- *                                                 at the last 2 positions of data buffer (BIG endian).
- *    @param[out]
- *
- *    @return uint16_t The result of CRC.
- *
- *    @note   
- *       To calculate the CRC: 
- *          The array to calculate CRC must be only the data, not including the CRC registers. The same to the 
- *          length, which must be only the number of data, NOT INCLUDING the 2 bytes of CRC.
- *
- *       To check the CRC:
- *           The last 2 bytes of the array to check the CRC is the CRC received. If the result (return)  
- *           is 0x0000, means CRC received is correct. Else, it is incorrect. CRC of the data is not modified.
- */
-/*-----------------------------------------------------------------------------------------------*/ 
-uint16_t fnCrc16BitsPoly1021(uint16_t uiCrcInit, uint8_t* pucBuffer, uint32_t ulLen)
-{
-   uint32_t ulCnt;
-   uint16_t uiCrc;
-   
-   uiCrc = uiCrcInit;
-   
-   for (ulCnt = 0; ulCnt < ulLen; ulCnt++)
-   { 
-      uiCrc = (uiCrc << 8) ^ auiCrc16Ccitt[((uiCrc >> 8) ^ ((uint16_t)(*pucBuffer))) & 0x00FF];
-      pucBuffer++;
-   }
-   
-   return (uiCrc);
 }
 
 
