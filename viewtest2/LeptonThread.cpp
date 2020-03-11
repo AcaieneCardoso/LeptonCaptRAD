@@ -189,8 +189,8 @@ void LeptonThread::run()
 						CRCmsb = result[(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)+2)];
 						CRClsb = result[(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)+3)];
 						// Keeping CRC 2 bytes together
-						uint16_t crcLocal = ((uint16_t)(CRClsb));
-						uint16_t crcLocal |= ((uint16_t)(CRCmsb)) << 8u; // isso está certo ????
+						uint16_t crcLocal = (((uint16_t)(CRClsb)) & 0x00FF);
+						uint16_t crcLocal |= ((((uint16_t)(CRCmsb)) << 8u) & 0xFF00);	//crcLocal = crcLocal | (...)
 						// Putting zero on 4 msbit of ID
 						result[(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)] = result[(sizeof(uint8_t)*PACKET_SIZE*(i*PACKETS_PER_SEGMENT+j)] & 0x0F;
 						// Putting zero on CRC 2 bytes
